@@ -1,8 +1,8 @@
 <?php 
 	
-	10 => array(
+10 => array(
 	            'class' => 'saml:NameIDAttribute',
-	            'attribute' => 'mail',
+	            'attribute' => 'uid',
 	            'format' => '%V',
 		),
         
@@ -10,10 +10,11 @@
 	    'class' => 'core:PHP',
 	    'code' => '
 	    	
-	    	$userEmail = $attributes["mail"][0];
+	    	$uid = $attributes["uid"][0];
+	    	$uid = substr($uid, 4);
 	    	
 			$url = "http://localhost:8080";
-			$request = "/people?email=".$userEmail."&properties[givenName]&properties[familyName]&properties[additionalName]&properties[email]&properties[roles][]=roleName";
+			$request = "/people/".$uid."?properties[givenName]&properties[familyName]&properties[additionalName]&properties[email]&properties[roles][]=roleName";
 			$api_secret = "****";
 			$api_passwd = "****";
 		
@@ -35,25 +36,22 @@
 			$result = file_get_contents($url, false, $context);
 				
 			$persondata = json_decode($result, true);
-			$persondata = $persondata["hydra:member"][0];
-			
-			$userName = $persondata["givenName"].$persondata["familyName"];
-		    
+				
 		    $roles = array();
 		    $rolesMap = $persondata["roles"];
 		    
 		    foreach ($rolesMap as $key => $value) {
-				
-				$roles[] = $value["@id"];
+				$tmpRole =$value["roleName"];
+				$tmpRole = strtolower($tmpRole);
+				$roles[] = $tmpRole;
 			}
 		    
-		    $attributes["uid"] = array($persondata["id"]);
-		    $attributes["firstName"] = array($persondata["givenName"]);
-		    $attributes["lastName"] = array($persondata["familyName"]);
-		    $attributes["displayName"] = array($persondata["givenName"]." ".$persondata["additionalName"]." ".$persondata["familyName"]);
-		    $attributes["userName"] = array(strtolower($userName));
+		    
+		    $attributes["givenName"] = array($persondata["givenName"]);
+		    $attributes["sn"] = array($persondata["familyName"]);
+		    $attributes["displayName"] = array($persondata["familyName"].", ".$persondata["givenName"]." ".$persondata["additionalName"]);
 		    $attributes["mail"] = array($persondata["email"]);
 		    $attributes["memberOf"] = $roles;	    
 			',
-		),		
+		),	
 ?>
